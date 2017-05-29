@@ -8,7 +8,7 @@ import {
   broker
 } from "./utils";
 
-suite("iterable");
+suite("from/iterable");
 
 let
   inputArray = [1,2,3,4,5],

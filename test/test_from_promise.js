@@ -8,12 +8,12 @@ import {
   broker
 } from "./utils";
 
-suite("promise");
+suite("from/promise");
 
 let
   input = 42;
 
-test.only("check promise", done => {
+test("check promise", done => {
   let promise = new Promise( resolve => resolve( input ) ),
     writable;
 
