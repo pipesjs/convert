@@ -13,7 +13,7 @@ And in your code, all the functions will be available on the `window.Pipes.conve
 
 ```javascript
 
-    let { toNodeStream, fromArray } = window.Pipes.convert;
+    let { toNodeStream, fromIterable } = window.Pipes.convert;
 ```
 
 ### For browserify users
@@ -30,10 +30,10 @@ The library is split up into modules, so you can both require the whole library 
 
 ```javascript
 
-    let { fromArray } = require("@pipes/convert");
-    let fromArray = require("@pipes/convert/fromArray");
+    let { fromIterable } = require("@pipes/convert");
+    let fromIterable = require("@pipes/convert/fromIterable");
 
-    let fromArray = require("@pipes/convert/from/array");
+    let fromIterable = require("@pipes/convert/from/iterable");
 ```
 
 ### For ES6 and Rollup users
@@ -43,8 +43,8 @@ If you want, you can directly import the es6 modules like so:
 ```javascript
 
     import pipesConvert from "@pipes/convert/src";
-    import { fromArray } from "@pipes/convert/src";
-    import fromArray from "@pipes/convert/src/fromArray";
+    import { fromIterable } from "@pipes/convert/src";
+    import fromIterable from "@pipes/convert/src/fromIterable";
 
-    import fromArray from "@pipes/convert/src/from/array";
+    import fromIterable from "@pipes/convert/src/from/iterable";
 ```
