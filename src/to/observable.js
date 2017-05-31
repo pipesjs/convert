@@ -33,12 +33,13 @@ function observablePump ( stream, observer ) {
   let
     reader: ReadableStreamReader = stream.getReader();
 
-    // Start pump
+  // Start pump
   pump();
 
+  // When observable is cancelled, cancel upstream readable
   return _=> {
-      reader.releaseLock();
-      stream.cancel("Downstream observable cancelled");
+    reader.releaseLock();
+    stream.cancel("Downstream observable cancelled");
   };
 
   function pump() {
