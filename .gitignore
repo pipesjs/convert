@@ -1,3 +1,15 @@
+# Keep these
+!test/*.js
+!src/*.js
+!src/from/*.js
+!src/to/*.js
+
+# build files
+*.js
+from/*.js
+to/*.js
+*.tgz
+
 # misc
 todos
 
