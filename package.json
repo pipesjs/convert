@@ -31,7 +31,8 @@
   },
   "homepage": "https://github.com/pipesjs/convert#readme",
   "peerDependencies": {
-    "@pipes/core": "*"
+    "@pipes/core": "*",
+    "zen-observable": "*"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
@@ -47,5 +48,8 @@
     "flow-bin": "^0.46.0",
     "mocha": "^2.4.5",
     "uglify-js": "^2.6.2"
+  },
+  "dependencies": {
+    "@pipes/core": "^0.8.3"
   }
 }

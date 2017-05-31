@@ -1,14 +1,15 @@
-# Keep these
-!test/*.js
-!src/*.js
-!src/from/*.js
-!src/to/*.js
-
 # build files
 *.js
 from/*.js
 to/*.js
 *.tgz
+
+# Keep these
+!test/*.js
+!src/*.js
+!src/shim/*.js
+!src/from/*.js
+!src/to/*.js
 
 # misc
 todos
