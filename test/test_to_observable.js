@@ -13,7 +13,7 @@ import {
 
 suite("to/observable");
 
-test("check promise", done => {
+test("check observable", done => {
   let input = [1,2,3],
     output = [],
     readable;

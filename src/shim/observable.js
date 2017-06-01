@@ -1,12 +1,17 @@
 // @flow
 
 const errStr = "No Observable implementation found";
+function noop () {}
 
 let _global = {},
   // Default defj
-  _Observable = function Observable() {
+  _Observable = function _Observable() {
     throw new Error( errStr );
   };
+
+_Observable.prototype.subscribe = noop;
+_Observable.prototype.of = noop;
+_Observable.prototype.from = noop;
 
 if ( typeof window !== "undefined" && !!window.Observable ) {
   _global = window;
