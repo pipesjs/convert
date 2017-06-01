@@ -1,0 +1,7 @@
+title: "@pipes/convert"
+description: Conversion utilities for web streams to/from other data structures.
+google_analytics: UA-100215781-1
+show_downloads: true
+theme: jekyll-theme-minimal
+gems:
+  - jekyll-mentions
