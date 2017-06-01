@@ -26,11 +26,6 @@ import accumulate from "@pipes/core/accumulate";
  *   });
  */
 
-function reducer( array: Array<any>, value: ?mixed ): Array<any> {
-  array.unshift( value );
-  return array;
-}
-
 export default function toPromise<T>(stream: ReadableStream): Promise<Array<T>> {
   let
     accumulator: TransformStream = new accumulate( reducer, [] ),
@@ -46,6 +41,11 @@ export default function toPromise<T>(stream: ReadableStream): Promise<Array<T>> 
       // Preserve arrival order
       return value.reverse();
     });
+}
+
+function reducer( array: Array<any>, value: ?mixed ): Array<any> {
+  array.unshift( value );
+  return array;
 }
 
 // Browserify compat

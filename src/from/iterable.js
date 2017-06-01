@@ -24,11 +24,6 @@ import pipe from "@pipes/core/pipe";
  *   writable
  * ); // res == input
  */
-function* runIterator( iterable: Iterable<any> ) {
-  yield* iterable;
-  return pipe.eos;
-}
-
 export default function fromIterable<T>(iterable: Iterable<T>): ReadableStream {
 
   let stream: TransformStream = new pipe(
@@ -38,6 +33,11 @@ export default function fromIterable<T>(iterable: Iterable<T>): ReadableStream {
 
   return stream.readable;
 
+}
+
+function* runIterator( iterable: Iterable<any> ) {
+  yield* iterable;
+  return pipe.eos;
 }
 
 // Browserify compat

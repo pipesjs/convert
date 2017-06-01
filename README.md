@@ -6,6 +6,11 @@
 -   [About](#about)
 -   [Installing](#installing)
 -   [API Reference](#api-reference)
+-   [fromIterable](#fromiterable)
+-   [fromObservable](#fromobservable)
+-   [fromPromise](#frompromise)
+-   [toObservable](#toobservable)
+-   [toPromise](#topromise)
 
 ## Introducing pipes/convert
 
@@ -117,3 +122,151 @@ The `convert` library consists of the following functions:
   });
 ```
 
+
+## fromIterable
+
+This function takes an iterable and returns a readable stream
+that queues the iterated values sequentially.
+
+**Parameters**
+
+-   `iterable` **Iterable&lt;T>** 
+
+**Examples**
+
+```javascript
+let
+  input = [1,2,3,4,5],
+  // input = function* gen() { yield* input; },
+  // input = input.join("");
+
+let writable, res=[];
+
+// Create test streams
+writable = createTestWritable( c => res.push( c ));
+
+// Connect the streams
+connect(
+  fromIterable( input ),
+  writable
+); // res == input
+```
+
+Returns **ReadableStream** 
+
+## fromObservable
+
+This function takes any `ReadableStream` and returns an `Observable`
+that emits chunks to `subscribers` when
+they arrive.
+
+**Parameters**
+
+-   `observable` **Observable** 
+
+**Examples**
+
+```javascript
+let input = [1,2,3],
+  output = [],
+  observable, writable;
+
+// Create test streams
+writable = createTestWritable( i => output.push( i ));
+
+// Test the promise
+return fromObservable( Observable.from( input ) )
+  .pipeTo( writable );
+```
+
+Returns **ReadableStream** 
+
+## fromPromise
+
+This function takes any promise and returns a readable stream
+that queues the resolved value or errors on rejection.
+
+**Parameters**
+
+-   `promise` **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;T>** 
+
+**Examples**
+
+```javascript
+let
+  input = 42;
+  promise = new Promise( resolve => resolve( input ) ),
+  writable;
+
+// Create test streams
+writable = createTestWritable( c => assert.equal( c, input ));
+
+connect(
+  fromPromise( promise ),
+  writable
+); // 42
+```
+
+Returns **ReadableStream** 
+
+## toObservable
+
+This function takes any `ReadableStream` and returns an `Observable`
+that emits chunks to `subscribers` when
+they arrive.
+
+**Parameters**
+
+-   `stream` **ReadableStream** 
+
+**Examples**
+
+```javascript
+let input = [1,2,3],
+  output = [],
+  readable;
+
+// Create test streams
+readable = createTestReadable( input );
+
+// Test the promise
+toObservable( readable )
+  .subscribe({
+      next (val) { output.push( val ); },
+      complete () {
+        assert.deepEqual( input, output );
+      }
+  });
+```
+
+Returns **Observable** 
+
+## toPromise
+
+This function takes any `ReadableStream` and returns a promise
+that resolves with an `Array` of the stream's contents when
+the stream closes.
+
+**Parameters**
+
+-   `stream` **ReadableStream** 
+
+**Examples**
+
+```javascript
+let input = [1,2,3],
+  output = [1,2,3],
+  readable;
+
+// Create test streams
+readable = createTestReadable( input );
+
+// Test the promise
+toPromise( readable )
+  .then( result => {
+    assert.deepEqual( result, output );
+    done();
+  });
+```
+
+Returns **[Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)&lt;[Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)&lt;T>>** 

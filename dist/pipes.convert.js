@@ -4,28 +4,261 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.fromPromise = exports.fromObservable = exports.fromIterable = undefined;
 
 var _core = require("@pipes/core");
 
 var _core2 = _interopRequireDefault(_core);
 
+var _iterable = require("./iterable");
+
+var _iterable2 = _interopRequireDefault(_iterable);
+
+var _observable = require("./observable");
+
+var _observable2 = _interopRequireDefault(_observable);
+
+var _promise = require("./promise");
+
+var _promise2 = _interopRequireDefault(_promise);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // Exports
-// export {
-// };
+exports.fromIterable = _iterable2.default;
+exports.fromObservable = _observable2.default;
+exports.fromPromise = _promise2.default;
 
 // Default exports
-var fns = {};
 
-// Export to window
-if (typeof window !== "undefined") window.Pipes = window.Pipes || _core2.default;
-Object.assign(window.Pipes, {
-  conver: fns
-});
+var fns = {
+  fromIterable: _iterable2.default,
+  fromObservable: _observable2.default,
+  fromPromise: _promise2.default
+};
 
 exports.default = fns;
-},{"@pipes/core":6}],2:[function(require,module,exports){
+},{"./iterable":2,"./observable":3,"./promise":4,"@pipes/core":10}],2:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = fromIterable;
+
+var _streams = require("@pipes/core/streams");
+
+var _pipe = require("@pipes/core/pipe");
+
+var _pipe2 = _interopRequireDefault(_pipe);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _marked = [runIterator].map(regeneratorRuntime.mark);
+
+/**
+ * This function takes an iterable and returns a readable stream
+ * that queues the iterated values sequentially.
+ *
+ * @example
+ * let
+ *   input = [1,2,3,4,5],
+ *   // input = function* gen() { yield* input; },
+ *   // input = input.join("");
+ *
+ * let writable, res=[];
+ *
+ * // Create test streams
+ * writable = createTestWritable( c => res.push( c ));
+ *
+ * // Connect the streams
+ * connect(
+ *   fromIterable( input ),
+ *   writable
+ * ); // res == input
+ */
+function fromIterable(iterable) {
+
+  var stream = new _pipe2.default(runIterator.bind(null, iterable), {
+    init: null
+  });
+
+  return stream.readable;
+}
+
+function runIterator(iterable) {
+  return regeneratorRuntime.wrap(function runIterator$(_context) {
+    while (1) {
+      switch (_context.prev = _context.next) {
+        case 0:
+          return _context.delegateYield(iterable, "t0", 1);
+
+        case 1:
+          return _context.abrupt("return", _pipe2.default.eos);
+
+        case 2:
+        case "end":
+          return _context.stop();
+      }
+    }
+  }, _marked[0], this);
+}
+
+// Browserify compat
+if (typeof module !== "undefined")
+  // $FlowFixMe
+  module.exports = fromIterable;
+},{"@pipes/core/pipe":12,"@pipes/core/streams":17}],3:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = fromObservable;
+
+var _observable = require("../shim/observable");
+
+var _observable2 = _interopRequireDefault(_observable);
+
+var _streams = require("@pipes/core/streams");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * This function takes any `ReadableStream` and returns an `Observable`
+ * that emits chunks to `subscribers` when
+ * they arrive.
+ *
+ * @example
+ * let input = [1,2,3],
+ *   output = [],
+ *   observable, writable;
+ *
+ * // Create test streams
+ * writable = createTestWritable( i => output.push( i ));
+ *
+ * // Test the promise
+ * return fromObservable( Observable.from( input ) )
+ *   .pipeTo( writable );
+ */
+
+function fromObservable(observable) {
+  var readableController = void 0,
+      readable = new _streams.ReadableStream({
+    start: function start(controller) {
+      readableController = controller;
+    }
+  });
+
+  // TODO: Add backpressure support
+  // Wire up stream with observable
+  observable.subscribe({
+    next: readableController && readableController.enqueue.bind(readableController),
+    error: readableController && readableController.error.bind(readableController),
+    complete: readableController && readableController.close.bind(readableController)
+  });
+
+  return readable;
+}
+
+// Browserify compat
+
+
+if (typeof module !== "undefined")
+  // $FlowFixMe
+  module.exports = fromObservable;
+},{"../shim/observable":22,"@pipes/core/streams":17}],4:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = fromPromise;
+
+var _streams = require("@pipes/core/streams");
+
+/**
+ * This function takes any promise and returns a readable stream
+ * that queues the resolved value or errors on rejection.
+ *
+ * @example
+ * let
+ *   input = 42;
+ *   promise = new Promise( resolve => resolve( input ) ),
+ *   writable;
+ *
+ * // Create test streams
+ * writable = createTestWritable( c => assert.equal( c, input ));
+ *
+ * connect(
+ *   fromPromise( promise ),
+ *   writable
+ * ); // 42
+ */
+
+function fromPromise(promise) {
+  var stream = new _streams.ReadableStream({
+    start: function start(controller) {
+      promise.then(function (value) {
+        controller.enqueue(value);
+        controller.close();
+      }).catch(function (error) {
+        return controller.error(error);
+      });
+    }
+  });
+
+  return stream;
+}
+
+// Browserify compat
+if (typeof module !== "undefined")
+  // $FlowFixMe
+  module.exports = fromPromise;
+},{"@pipes/core/streams":17}],5:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.fromPromise = exports.fromObservable = exports.fromIterable = exports.toPromise = exports.toObservable = undefined;
+
+var _core = require("@pipes/core");
+
+var _core2 = _interopRequireDefault(_core);
+
+var _from = require("./from");
+
+var _to = require("./to");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// Exports
+exports.toObservable = _to.toObservable;
+exports.toPromise = _to.toPromise;
+exports.fromIterable = _from.fromIterable;
+exports.fromObservable = _from.fromObservable;
+exports.fromPromise = _from.fromPromise;
+
+// Default exports
+
+var fns = {
+  toObservable: _to.toObservable,
+  toPromise: _to.toPromise,
+  fromIterable: _from.fromIterable,
+  fromObservable: _from.fromObservable,
+  fromPromise: _from.fromPromise
+};
+
+// Export to window
+if (typeof window !== "undefined") {
+  window.Pipes = window.Pipes || _core2.default;
+  window.Pipes.convert = window.Pipes.convert || {};
+  Object.assign(window.Pipes.convert, fns);
+}
+
+exports.default = fns;
+},{"./from":1,"./to":23,"@pipes/core":10}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -148,7 +381,7 @@ function accumulate(reducer, init) {
 if (typeof module !== "undefined")
   // $FlowFixMe
   module.exports = accumulate;
-},{"./streams":13,"./utils":14}],3:[function(require,module,exports){
+},{"./streams":17,"./utils":18}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -208,7 +441,7 @@ function chain(origin) {
 if (typeof module !== "undefined")
   // $FlowFixMe
   module.exports = chain;
-},{"./connect":4,"./utils":14}],4:[function(require,module,exports){
+},{"./connect":8,"./utils":18}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -306,7 +539,7 @@ connect._connect = connect;
 if (typeof module !== "undefined")
   // $FlowFixMe
   module.exports = connect;
-},{"./streams":13,"./utils":14}],5:[function(require,module,exports){
+},{"./streams":17,"./utils":18}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -377,7 +610,7 @@ function flatten() {
 if (typeof module !== "undefined")
   // $FlowFixMe
   module.exports = flatten;
-},{"./streams":13,"./utils":14}],6:[function(require,module,exports){
+},{"./streams":17,"./utils":18}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -442,7 +675,7 @@ if (typeof window !== "undefined") Object.assign(window, {
 });
 
 exports.default = fns;
-},{"./accumulate":2,"./chain":3,"./connect":4,"./flatten":5,"./merge":7,"./pipe":8,"./split":12}],7:[function(require,module,exports){
+},{"./accumulate":6,"./chain":7,"./connect":8,"./flatten":9,"./merge":11,"./pipe":12,"./split":16}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -581,7 +814,7 @@ merge._merge = merge;
 if (typeof module !== "undefined")
   // $FlowFixMe
   module.exports = merge;
-},{"./streams":13}],8:[function(require,module,exports){
+},{"./streams":17}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -697,7 +930,7 @@ pipe.eos = _utils.EOS;
 
 // Browserify compat
 if (typeof module !== "undefined") module.exports = pipe;
-},{"./pipeAsync":9,"./pipeFn":10,"./pipeGen":11,"./utils":14}],9:[function(require,module,exports){
+},{"./pipeAsync":13,"./pipeFn":14,"./pipeGen":15,"./utils":18}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -820,7 +1053,7 @@ function pipeAsync(fn) {
 
   if (this instanceof pipeAsync) return new TransformBlueprint();else return TransformBlueprint;
 }
-},{"./streams":13,"./utils":14}],10:[function(require,module,exports){
+},{"./streams":17,"./utils":18}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -904,7 +1137,7 @@ function pipeFn(fn) {
 
   return TransformBlueprint;
 }
-},{"./streams":13,"./utils":14}],11:[function(require,module,exports){
+},{"./streams":17,"./utils":18}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1065,7 +1298,7 @@ function pipeGen(fn) {
     this.writable = writable;
   };
 }
-},{"./streams":13,"./utils":14}],12:[function(require,module,exports){
+},{"./streams":17,"./utils":18}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1138,7 +1371,7 @@ function split(stream) {
 if (typeof module !== "undefined")
   // $FlowFixMe
   module.exports = split;
-},{"./streams":13}],13:[function(require,module,exports){
+},{"./streams":17}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1195,7 +1428,7 @@ exports.default = interfaces;
 ;
 
 ;
-},{"web-streams-polyfill":15}],14:[function(require,module,exports){
+},{"web-streams-polyfill":19}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1299,7 +1532,7 @@ function uuid(a) {
   // $FlowFixMe
   return a ? (a ^ Math.random() * 16 >> a / 4).toString(16) : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, uuid);
 }
-},{"./streams":13}],15:[function(require,module,exports){
+},{"./streams":17}],19:[function(require,module,exports){
 (function (global){
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.default = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 "use strict";Object.defineProperty(exports,"__esModule",{value:!0});var _require=_dereq_("./spec/reference-implementation/lib/readable-stream"),ReadableStream=_require.ReadableStream,_require2=_dereq_("./spec/reference-implementation/lib/writable-stream"),WritableStream=_require2.WritableStream,ByteLengthQueuingStrategy=_dereq_("./spec/reference-implementation/lib/byte-length-queuing-strategy"),CountQueuingStrategy=_dereq_("./spec/reference-implementation/lib/count-queuing-strategy"),TransformStream=_dereq_("./spec/reference-implementation/lib/transform-stream").TransformStream;exports.ByteLengthQueuingStrategy=ByteLengthQueuingStrategy,exports.CountQueuingStrategy=CountQueuingStrategy,exports.TransformStream=TransformStream,exports.ReadableStream=ReadableStream,exports.WritableStream=WritableStream;var interfaces={ReadableStream:ReadableStream,WritableStream:WritableStream,ByteLengthQueuingStrategy:ByteLengthQueuingStrategy,CountQueuingStrategy:CountQueuingStrategy,TransformStream:TransformStream};exports.default=interfaces,"undefined"!=typeof window&&Object.assign(window,interfaces);
@@ -1333,4 +1566,726 @@ this._controlledReadableStream=r,this._underlyingByteSource=t,this._pullAgain=!1
 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[1]);
+},{}],20:[function(require,module,exports){
+module.exports = require("./zen-observable.js").Observable;
+
+},{"./zen-observable.js":21}],21:[function(require,module,exports){
+'use strict'; (function(fn, name) { if (typeof exports !== 'undefined') fn(exports, module); else if (typeof self !== 'undefined') fn(name === '*' ? self : (name ? self[name] = {} : {})); })(function(exports, module) { // === Symbol Support ===
+
+function hasSymbol(name) {
+  return typeof Symbol === "function" && Boolean(Symbol[name]);
+}
+
+function getSymbol(name) {
+  return hasSymbol(name) ? Symbol[name] : "@@" + name;
+}
+
+// Ponyfill Symbol.observable for interoperability with other libraries
+if (typeof Symbol === "function" && !Symbol.observable) {
+  Symbol.observable = Symbol("observable");
+}
+
+// === Abstract Operations ===
+
+function getMethod(obj, key) {
+  var value = obj[key];
+
+  if (value == null)
+    return undefined;
+
+  if (typeof value !== "function")
+    throw new TypeError(value + " is not a function");
+
+  return value;
+}
+
+function getSpecies(obj) {
+  var ctor = obj.constructor;
+  if (ctor !== undefined) {
+    ctor = ctor[getSymbol("species")];
+    if (ctor === null) {
+      ctor = undefined;
+    }
+  }
+  return ctor !== undefined ? ctor : Observable;
+}
+
+function addMethods(target, methods) {
+  Object.keys(methods).forEach(function(k) {
+    var desc = Object.getOwnPropertyDescriptor(methods, k);
+    desc.enumerable = false;
+    Object.defineProperty(target, k, desc);
+  });
+}
+
+function cleanupSubscription(subscription) {
+  // Assert:  observer._observer is undefined
+
+  var cleanup = subscription._cleanup;
+
+  if (!cleanup)
+    return;
+
+  // Drop the reference to the cleanup function so that we won't call it
+  // more than once
+  subscription._cleanup = undefined;
+
+  // Call the cleanup function
+  cleanup();
+}
+
+function subscriptionClosed(subscription) {
+  return subscription._observer === undefined;
+}
+
+function closeSubscription(subscription) {
+  if (subscriptionClosed(subscription))
+    return;
+
+  subscription._observer = undefined;
+  cleanupSubscription(subscription);
+}
+
+function cleanupFromSubscription(subscription) {
+  return function() { subscription.unsubscribe() };
+}
+
+function Subscription(observer, subscriber) {
+  // Assert: subscriber is callable
+
+  // The observer must be an object
+  if (Object(observer) !== observer)
+    throw new TypeError("Observer must be an object");
+
+  this._cleanup = undefined;
+  this._observer = observer;
+
+  var start = getMethod(observer, "start");
+
+  if (start)
+    start.call(observer, this);
+
+  if (subscriptionClosed(this))
+    return;
+
+  observer = new SubscriptionObserver(this);
+
+  try {
+    // Call the subscriber function
+    var cleanup$0 = subscriber.call(undefined, observer);
+
+    // The return value must be undefined, null, a subscription object, or a function
+    if (cleanup$0 != null) {
+      if (typeof cleanup$0.unsubscribe === "function")
+        cleanup$0 = cleanupFromSubscription(cleanup$0);
+      else if (typeof cleanup$0 !== "function")
+        throw new TypeError(cleanup$0 + " is not a function");
+
+      this._cleanup = cleanup$0;
+    }
+  } catch (e) {
+    // If an error occurs during startup, then attempt to send the error
+    // to the observer
+    observer.error(e);
+    return;
+  }
+
+  // If the stream is already finished, then perform cleanup
+  if (subscriptionClosed(this))
+    cleanupSubscription(this);
+}
+
+addMethods(Subscription.prototype = {}, {
+  get closed() { return subscriptionClosed(this) },
+  unsubscribe: function() { closeSubscription(this) },
+});
+
+function SubscriptionObserver(subscription) {
+  this._subscription = subscription;
+}
+
+addMethods(SubscriptionObserver.prototype = {}, {
+
+  get closed() { return subscriptionClosed(this._subscription) },
+
+  next: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, then return undefined
+    if (subscriptionClosed(subscription))
+      return undefined;
+
+    var observer = subscription._observer;
+    var m = getMethod(observer, "next");
+
+    // If the observer doesn't support "next", then return undefined
+    if (!m)
+      return undefined;
+
+    // Send the next value to the sink
+    return m.call(observer, value);
+  },
+
+  error: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, throw the error to the caller
+    if (subscriptionClosed(subscription))
+      throw value;
+
+    var observer = subscription._observer;
+    subscription._observer = undefined;
+
+    try {
+      var m$0 = getMethod(observer, "error");
+
+      // If the sink does not support "error", then throw the error to the caller
+      if (!m$0)
+        throw value;
+
+      value = m$0.call(observer, value);
+    } catch (e) {
+      try { cleanupSubscription(subscription) }
+      finally { throw e }
+    }
+
+    cleanupSubscription(subscription);
+    return value;
+  },
+
+  complete: function(value) {
+    var subscription = this._subscription;
+
+    // If the stream is closed, then return undefined
+    if (subscriptionClosed(subscription))
+      return undefined;
+
+    var observer = subscription._observer;
+    subscription._observer = undefined;
+
+    try {
+      var m$1 = getMethod(observer, "complete");
+
+      // If the sink does not support "complete", then return undefined
+      value = m$1 ? m$1.call(observer, value) : undefined;
+    } catch (e) {
+      try { cleanupSubscription(subscription) }
+      finally { throw e }
+    }
+
+    cleanupSubscription(subscription);
+    return value;
+  },
+
+});
+
+function Observable(subscriber) {
+  // The stream subscriber must be a function
+  if (typeof subscriber !== "function")
+    throw new TypeError("Observable initializer must be a function");
+
+  this._subscriber = subscriber;
+}
+
+addMethods(Observable.prototype, {
+
+  subscribe: function(observer) { for (var args = [], __$0 = 1; __$0 < arguments.length; ++__$0) args.push(arguments[__$0]); 
+    if (typeof observer === 'function') {
+      observer = {
+        next: observer,
+        error: args[0],
+        complete: args[1],
+      };
+    }
+
+    return new Subscription(observer, this._subscriber);
+  },
+
+  forEach: function(fn) { var __this = this; 
+    return new Promise(function(resolve, reject) {
+      if (typeof fn !== "function")
+        return Promise.reject(new TypeError(fn + " is not a function"));
+
+      __this.subscribe({
+        _subscription: null,
+
+        start: function(subscription) {
+          if (Object(subscription) !== subscription)
+            throw new TypeError(subscription + " is not an object");
+
+          this._subscription = subscription;
+        },
+
+        next: function(value) {
+          var subscription = this._subscription;
+
+          if (subscription.closed)
+            return;
+
+          try {
+            return fn(value);
+          } catch (err) {
+            reject(err);
+            subscription.unsubscribe();
+          }
+        },
+
+        error: reject,
+        complete: resolve,
+      });
+    });
+  },
+
+  map: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) { return __this.subscribe({
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        try { value = fn(value) }
+        catch (e) { return observer.error(e) }
+
+        return observer.next(value);
+      },
+
+      error: function(e) { return observer.error(e) },
+      complete: function(x) { return observer.complete(x) },
+    }); });
+  },
+
+  filter: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) { return __this.subscribe({
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        try { if (!fn(value)) return undefined }
+        catch (e) { return observer.error(e) }
+
+        return observer.next(value);
+      },
+
+      error: function(e) { return observer.error(e) },
+      complete: function() { return observer.complete() },
+    }); });
+  },
+
+  reduce: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+    var hasSeed = arguments.length > 1;
+    var hasValue = false;
+    var seed = arguments[1];
+    var acc = seed;
+
+    return new C(function(observer) { return __this.subscribe({
+
+      next: function(value) {
+        if (observer.closed)
+          return;
+
+        var first = !hasValue;
+        hasValue = true;
+
+        if (!first || hasSeed) {
+          try { acc = fn(acc, value) }
+          catch (e) { return observer.error(e) }
+        } else {
+          acc = value;
+        }
+      },
+
+      error: function(e) { observer.error(e) },
+
+      complete: function() {
+        if (!hasValue && !hasSeed) {
+          observer.error(new TypeError("Cannot reduce an empty sequence"));
+          return;
+        }
+
+        observer.next(acc);
+        observer.complete();
+      },
+
+    }); });
+  },
+
+  flatMap: function(fn) { var __this = this; 
+    if (typeof fn !== "function")
+      throw new TypeError(fn + " is not a function");
+
+    var C = getSpecies(this);
+
+    return new C(function(observer) {
+      var completed = false;
+      var subscriptions = [];
+
+      // Subscribe to the outer Observable
+      var outer = __this.subscribe({
+
+        next: function(value) {
+          if (fn) {
+            try {
+              value = fn(value);
+            } catch (x) {
+              observer.error(x);
+              return;
+            }
+          }
+
+          // Subscribe to the inner Observable
+          Observable.from(value).subscribe({
+            _subscription: null,
+
+            start: function(s) { subscriptions.push(this._subscription = s) },
+            next: function(value) { observer.next(value) },
+            error: function(e) { observer.error(e) },
+
+            complete: function() {
+              var i = subscriptions.indexOf(this._subscription);
+
+              if (i >= 0)
+                subscriptions.splice(i, 1);
+
+              closeIfDone();
+            }
+          });
+        },
+
+        error: function(e) {
+          return observer.error(e);
+        },
+
+        complete: function() {
+          completed = true;
+          closeIfDone();
+        }
+      });
+
+      function closeIfDone() {
+        if (completed && subscriptions.length === 0)
+          observer.complete();
+      }
+
+      return function() {
+        subscriptions.forEach(function(s) { return s.unsubscribe(); });
+        outer.unsubscribe();
+      };
+    });
+  },
+
+});
+
+Object.defineProperty(Observable.prototype, getSymbol("observable"), {
+  value: function() { return this },
+  writable: true,
+  configurable: true,
+});
+
+addMethods(Observable, {
+
+  from: function(x) {
+    var C = typeof this === "function" ? this : Observable;
+
+    if (x == null)
+      throw new TypeError(x + " is not an object");
+
+    var method = getMethod(x, getSymbol("observable"));
+
+    if (method) {
+      var observable$0 = method.call(x);
+
+      if (Object(observable$0) !== observable$0)
+        throw new TypeError(observable$0 + " is not an object");
+
+      if (observable$0.constructor === C)
+        return observable$0;
+
+      return new C(function(observer) { return observable$0.subscribe(observer); });
+    }
+
+    if (hasSymbol("iterator") && (method = getMethod(x, getSymbol("iterator")))) {
+      return new C(function(observer) {
+        for (var __$0 = (method.call(x))[Symbol.iterator](), __$1; __$1 = __$0.next(), !__$1.done;) { var item$0 = __$1.value; 
+          observer.next(item$0);
+          if (observer.closed)
+            return;
+        }
+
+        observer.complete();
+      });
+    }
+
+    if (Array.isArray(x)) {
+      return new C(function(observer) {
+        for (var i$0 = 0; i$0 < x.length; ++i$0) {
+          observer.next(x[i$0]);
+          if (observer.closed)
+            return;
+        }
+
+        observer.complete();
+      });
+    }
+
+    throw new TypeError(x + " is not observable");
+  },
+
+  of: function() { for (var items = [], __$0 = 0; __$0 < arguments.length; ++__$0) items.push(arguments[__$0]); 
+    var C = typeof this === "function" ? this : Observable;
+
+    return new C(function(observer) {
+      for (var i$1 = 0; i$1 < items.length; ++i$1) {
+        observer.next(items[i$1]);
+        if (observer.closed)
+          return;
+      }
+
+      observer.complete();
+    });
+  },
+
+});
+
+Object.defineProperty(Observable, getSymbol("species"), {
+  get: function() { return this },
+  configurable: true,
+});
+
+exports.Observable = Observable;
+
+
+}, "*");
+},{}],22:[function(require,module,exports){
+(function (global){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var errStr = "No Observable implementation found";
+function noop() {}
+
+var _global = {},
+
+// Default defj
+_Observable = function _Observable() {
+  throw new Error(errStr);
+};
+
+_Observable.prototype.subscribe = noop;
+_Observable.prototype.of = noop;
+_Observable.prototype.from = noop;
+
+if (typeof window !== "undefined" && !!window.Observable) {
+  _global = window;
+  _Observable = window.Observable;
+
+  // Assume node or browserify-like environment
+} else if (!!global.Observable) {
+
+  _global = global;
+  _Observable = global.Observable;
+}
+
+if (!(_global.Observable = _Observable)) {
+  // Try loading a shim
+  try {
+    _Observable = require("zen-observable");
+  } catch (e) {
+    console.log(errStr);
+    global.Observable = _Observable;
+  }
+}
+
+exports.default = _Observable;
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"zen-observable":20}],23:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.toPromise = exports.toObservable = undefined;
+
+var _core = require("@pipes/core");
+
+var _core2 = _interopRequireDefault(_core);
+
+var _observable = require("./observable");
+
+var _observable2 = _interopRequireDefault(_observable);
+
+var _promise = require("./promise");
+
+var _promise2 = _interopRequireDefault(_promise);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// Exports
+exports.toObservable = _observable2.default;
+exports.toPromise = _promise2.default;
+
+// Default exports
+
+var fns = {
+  toObservable: _observable2.default,
+  toPromise: _promise2.default
+};
+
+exports.default = fns;
+},{"./observable":24,"./promise":25,"@pipes/core":10}],24:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = toObservable;
+
+var _observable = require("../shim/observable");
+
+var _observable2 = _interopRequireDefault(_observable);
+
+var _streams = require("@pipes/core/streams");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * This function takes any `ReadableStream` and returns an `Observable`
+ * that emits chunks to `subscribers` when
+ * they arrive.
+ *
+ * @example
+ * let input = [1,2,3],
+ *   output = [],
+ *   readable;
+ *
+ * // Create test streams
+ * readable = createTestReadable( input );
+ *
+ * // Test the promise
+ * toObservable( readable )
+ *   .subscribe({
+ *       next (val) { output.push( val ); },
+ *       complete () {
+ *         assert.deepEqual( input, output );
+ *       }
+ *   });
+ */
+function toObservable(stream) {
+  var pump = observablePump.bind(null, stream),
+      observable = new _observable2.default(pump);
+
+  return observable;
+}
+
+function observablePump(stream, observer) {
+  var reader = stream.getReader();
+
+  // Start pump
+  pump();
+
+  // When observable is cancelled, cancel upstream readable
+  return function (_) {
+    reader.releaseLock();
+    stream.cancel("Downstream observable cancelled");
+  };
+
+  function pump() {
+    return reader.read().then(function (_ref) {
+      var value = _ref.value,
+          done = _ref.done;
+
+      if (done) {
+        return observer.complete();
+      }
+
+      // Enqueue and repeat
+      observer.next(value);
+      pump();
+    });
+  }
+}
+
+// Browserify compat
+if (typeof module !== "undefined")
+  // $FlowFixMe
+  module.exports = toObservable;
+},{"../shim/observable":22,"@pipes/core/streams":17}],25:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = toPromise;
+
+var _streams = require("@pipes/core/streams");
+
+var _accumulate = require("@pipes/core/accumulate");
+
+var _accumulate2 = _interopRequireDefault(_accumulate);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * This function takes any `ReadableStream` and returns a promise
+ * that resolves with an `Array` of the stream's contents when
+ * the stream closes.
+ *
+ * @example
+ * let input = [1,2,3],
+ *   output = [1,2,3],
+ *   readable;
+ *
+ * // Create test streams
+ * readable = createTestReadable( input );
+ *
+ * // Test the promise
+ * toPromise( readable )
+ *   .then( result => {
+ *     assert.deepEqual( result, output );
+ *     done();
+ *   });
+ */
+
+function toPromise(stream) {
+  var accumulator = new _accumulate2.default(reducer, []),
+      readable = stream.pipeThrough(accumulator),
+
+
+  // Get new stream's reader
+  reader = readable.getReader();
+
+  // Wait for stream to finish
+  return reader.read().then(function (_ref) {
+    var value = _ref.value;
+
+    reader.releaseLock();
+
+    // Preserve arrival order
+    return value.reverse();
+  });
+}
+
+function reducer(array, value) {
+  array.unshift(value);
+  return array;
+}
+
+// Browserify compat
+if (typeof module !== "undefined")
+  // $FlowFixMe
+  module.exports = toPromise;
+},{"@pipes/core/accumulate":6,"@pipes/core/streams":17}]},{},[5]);

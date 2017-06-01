@@ -28,6 +28,13 @@ import { ReadableStream } from "@pipes/core/streams";
  *       }
  *   });
  */
+export default function toObservable(stream: ReadableStream): Observable {
+  let
+    pump: anyFn = observablePump.bind( null, stream ),
+    observable: Observable = new Observable( pump );
+
+  return observable;
+}
 
 function observablePump ( stream, observer ) {
   let
@@ -53,14 +60,6 @@ function observablePump ( stream, observer ) {
       pump();
     });
   }
-}
-
-export default function toObservable(stream: ReadableStream): Observable {
-  let
-    pump: anyFn = observablePump.bind( null, stream ),
-    observable: Observable = new Observable( pump );
-
-  return observable;
 }
 
 // Browserify compat
